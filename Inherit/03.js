@@ -25,6 +25,7 @@ function SubType(name, age) {
 
 // 继承方法
 SubType.prototype = new SuperType();
+SubType.prototype.constructor = SubType
 
 SubType.prototype.getAge = function () {
   return this.age;
@@ -40,3 +41,5 @@ let instance2 = new SubType("Kobe", 30);
 console.log(instance2.colors);
 console.log(instance2.getAge());
 console.log(instance2.getName());
+
+console.log(SubType.prototype.constructor == SubType)
