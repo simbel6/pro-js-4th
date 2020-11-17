@@ -1,6 +1,5 @@
 // ES5 实现
 Function.prototype.myCall = function (ctx) {
-    console.log('call---')
   //   ctx = ctx || window;
   ctx = ctx || globalThis; // node环境
   var fn = "00" + Math.random();
