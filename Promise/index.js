@@ -76,13 +76,13 @@ Promise.prototype.then = function (onFulfilled, onRejected) {
           throw reason;
         };
   let that = this;
-  let promise = new Promise((resolve, reject) => {
+  let promise2 = new Promise((resolve, reject) => {
     if (that.status === PENDING) {
       that.resolvedCallback.push(() => {
         setTimeout(() => {
           try {
             let x = onFulfilled(that.value);
-            resolvePromise(promise, x, resolve, reject);
+            resolvePromise(promise2, x, resolve, reject);
           } catch (e) {
             reject(e);
           }
@@ -92,7 +92,7 @@ Promise.prototype.then = function (onFulfilled, onRejected) {
         setTimeout(() => {
           try {
             let x = onRejected(that.reason);
-            resolvePromise(promise, x, resolve, reject);
+            resolvePromise(promise2, x, resolve, reject);
           } catch (e) {
             reject(e);
           }
@@ -102,7 +102,7 @@ Promise.prototype.then = function (onFulfilled, onRejected) {
       setTimeout(() => {
         try {
           let x = onFulfilled(that.value);
-          resolvePromise(promise, x, resolve, reject);
+          resolvePromise(promise2, x, resolve, reject);
         } catch (e) {
           reject(e);
         }
@@ -111,13 +111,14 @@ Promise.prototype.then = function (onFulfilled, onRejected) {
       setTimeout(() => {
         try {
           let x = onRejected(that.reason);
-          resolvePromise(promise, x, resolve, reject);
+          resolvePromise(promise2, x, resolve, reject);
         } catch (e) {
           reject(e);
         }
       });
     }
   });
+  return promise2;
 };
 
 function resolvePromise(promise2, x, resolve, reject) {
@@ -125,8 +126,8 @@ function resolvePromise(promise2, x, resolve, reject) {
     reject(new TypeError("Promise Cycle Reference"));
   }
   let that = this;
-  let called = false; // 确保只传递出去一次值
   if ((x && typeof x === "object") || typeof x === "function") {
+    let called = false; // 确保只能调用一次
     try {
       // 防止重复去读取x.then，
       let then = x.then;
@@ -137,9 +138,9 @@ function resolvePromise(promise2, x, resolve, reject) {
         then.call(
           x,
           (y) => {
-            //如果Y是promise就继续递归promise
             if (called) return;
             called = true;
+            //如果Y是promise就继续递归promise
             resolvePromise(promise2, y, resolve, reject);
           },
           (r) => {
@@ -166,13 +167,12 @@ function resolvePromise(promise2, x, resolve, reject) {
 }
 
 Promise.defer = Promise.deferred = function () {
-    let dfd = {};
-    dfd.promise = new Promise((resolve, reject) => {
-        dfd.resolve = resolve;
-        dfd.reject = reject;
-    });
-    return dfd;
-}
+  let dfd = {};
+  dfd.promise = new Promise((resolve, reject) => {
+    dfd.resolve = resolve;
+    dfd.reject = reject;
+  });
+  return dfd;
+};
 
-
-module.exports = Promise
+module.exports = Promise;
