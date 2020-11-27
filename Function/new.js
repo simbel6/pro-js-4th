@@ -14,6 +14,22 @@ function myNew(fn, ...args) {
   return obj;
 }
 
+/**
+* @param {fn} Function(any) 构造函数
+* @param {arg1, arg2, ...} 指定的参数列表
+*/
+function myNew2 (fn, ...args) {
+  // 创建一个新对象，并把它的原型链（__proto__）指向构造函数的原型对象
+  const instance = Object.create(fn.prototype)
+
+  // 把新对象作为thisArgs和参数列表一起使用call或apply调用构造函数
+  const result = fn.apply(instance, args)
+
+  // 如果构造函数的执行结果返回了对象类型的数据（排除null），则返回该对象，否则返新对象
+  return (result && typeof instance === 'object') ? result : instance
+}  
+
+
 function Person(name, age) {
   this.name = name;
   this.age = age;
