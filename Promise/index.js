@@ -118,6 +118,7 @@ Promise.prototype.then = function (onFulfilled, onRejected) {
       });
     }
   });
+  // then必须返回一个promise
   return promise2;
 };
 
@@ -125,7 +126,6 @@ function resolvePromise(promise2, x, resolve, reject) {
   if (promise2 === x) {
     reject(new TypeError("Promise Cycle Reference"));
   }
-  let that = this;
   if ((x && typeof x === "object") || typeof x === "function") {
     let called = false; // 确保只能调用一次
     try {
@@ -173,6 +173,146 @@ Promise.defer = Promise.deferred = function () {
     dfd.reject = reject;
   });
   return dfd;
+};
+
+/**
+ * Promise.prototype.catch
+ * @param {*} onRejected
+ * 用于指定出错时的回调，是特殊的then方法，catch之后，可以继续 .then
+ */
+Promise.prototype.catch = function (onRejected) {
+  return this.then(null, onRejected);
+};
+
+/**
+ * Promise.prototype.finally
+ * @param {*} callback
+ * 不管成功还是失败，都会走到finally中,并且finally之后，还可以继续then。并且会将值原封不动的传递给后面的then.
+ */
+Promise.prototype.finally = function (callback) {
+  return this.then(
+    (value) => {
+      return Promise.resolve(callback()).then(() => {
+        return value;
+      });
+    },
+    (err) => {
+      return Promise.reject(callback()).then(() => {
+        throw err;
+      });
+    }
+  );
+};
+
+/**
+ * Promise.resolve
+ * @param {*} param
+ * 1. 如果 value 是个 thenable 对象，返回的promise会“跟随”这个thenable的对象，采用它的最终状态
+ * 2. 如果传入的value本身就是promise对象，那么Promise.resolve将不做任何修改、原封不动地返回这个promise对象。
+ * 3. 其他情况，直接返回以该值为成功状态的promise对象。
+ */
+Promise.resolve = function (param) {
+  if (param instanceof Promise) {
+    return param;
+  }
+  return new Promise((resolve, reject) => {
+    if (
+      param &&
+      typeof param === "object" &&
+      typeof param.then === "function"
+    ) {
+      setTimeout(() => {
+        param.then(resolve, reject);
+      });
+    } else {
+      resolve(param);
+    }
+  });
+};
+
+/**
+ * Promise.reject
+ * @param {*} reason
+ * Promise.reject()方法的参数，会原封不动地作为reject的理由，变成后续方法的参数
+ */
+Promise.reject = function (reason) {
+  return new Promise((resolve, reject) => {
+    reject(reason);
+  });
+};
+
+/**
+ * Promise.all
+ * @param {*} promises
+ * 1. 如果传入的参数是一个空的可迭代对象，那么此promise对象回调完成(resolve),只有此情况，是同步执行的，其它都是异步返回的。
+ * 2. 如果传入的参数不包含任何 promise，则返回一个异步完成.
+ * 3. promises 中所有的promise都“完成”时或参数中不包含 promise 时回调完成。
+ * 4. 如果参数中有一个promise失败，那么Promise.all返回的promise对象失败
+ * 5. 在任何情况下，Promise.all 返回的 promise 的完成状态的结果都是一个数组
+ */
+Promise.all = function (promises) {
+  promises = Array.from(promises);
+  return new Promise((resolve, reject) => {
+    let index = 0,
+      result = [];
+    if (promises.length === 0) {
+      resolve(result);
+    } else {
+      for (let i = 0; i < promises.length; i++) {
+        Promise.resolve(promises[i]).then(
+          (data) => {
+            result[i] = data;
+            if (++index === promises.length) {
+              resolve(result);
+            }
+          },
+          (err) => {
+            reject(err);
+            return;
+          }
+        );
+      }
+    }
+  });
+};
+
+/**
+ * Promise.race
+ * @param {*} promises
+ * Promise.race(iterable) 方法返回一个 promise，一旦迭代器中的某个promise解决或拒绝，返回的 promise就会解决或拒绝
+ */
+Promise.race = function (promises) {
+  return new Promise((resolve, reject) => {
+    for (const promise of promises) {
+      Promise.resolve(promise).then(resolve, reject);
+    }
+  });
+};
+
+/**
+ * Promise.allSettled
+ * @param {*} promises
+ * 返回一个promise，该promise在所有给定的promise已被解析或被拒绝后解析，并且每个对象都描述每个promise的结果。
+ */
+Promise.allSettled = function (promises) {
+  if (promises instanceof Array) {
+    let result = [];
+    promises.forEach((promise) => {
+      result.push(
+        new Promise((resolve, reject) => {
+          promise
+            .then((value) => {
+              resolve({ state: true, data: value });
+            })
+            .catch((e) => {
+              resolve({ state: false, data: e });
+            });
+        })
+      );
+    });
+    return Promise.all(result);
+  }
+  return Promise.reject();
 };
 
 module.exports = Promise;
