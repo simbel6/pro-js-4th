@@ -165,3 +165,4 @@ reduce 参数说明：
 
 ## setTimeout, setInterval
 
+setTimeout
