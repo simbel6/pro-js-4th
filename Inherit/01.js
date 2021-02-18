@@ -49,3 +49,4 @@ let instance2 = new SubType();
 console.log("instance2.colors", instance2.colors);
 
 console.log(SubType.prototype.constructor == SubType);
+
